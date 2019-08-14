@@ -15,6 +15,11 @@ typedef struct
     const char *json;
 } lept_context;
 
+/**
+ * @brief 跳过字符串的开始的空白部分
+ *
+ * @param c 指向字符串的指针
+ */
 static void lept_parse_whitespace(lept_context *c)
 {
     const char *p = c->json;
