@@ -1,6 +1,8 @@
 #include "leptjson.h"
 
 #include <assert.h>
+#include <errno.h>
+#include <math.h>
 #include <stdlib.h>
 
 #define EXPECT(c, ch)             \
@@ -9,6 +11,9 @@
         assert(*c->json == (ch)); \
         c->json++;                \
     } while(0)
+
+#define ISDIGIT(ch) ((ch) >= '0' && (ch) <= '9')
+#define ISDIGIT1TO9(ch) ((ch) >= '1' && (ch) <= '9')
 
 typedef struct
 {
@@ -28,6 +33,18 @@ static void lept_parse_whitespace(lept_context *c)
         p++;
         c->json = p;
     }
+}
+
+static int lept_parse_literal(lept_context *c, lept_value *v, const char *literal, lept_type type)
+{
+    size_t i;
+    EXPECT(c, literal[0]);
+    for(i = 0; literal[i + 1]; i++)
+        if(c->json[i] != literal[i + 1])
+            return LEPT_PARSE_INVALID_VALUE;
+    c->json += i;
+    v->type = type;
+    return LEPT_PARSE_OK;
 }
 
 /**
@@ -94,7 +111,24 @@ static int lept_parse_null(lept_context *c, lept_value *v)
  */
 static int lept_parse_number(lept_context *c, lept_value *v)
 {
-    char *end;
+    const char *p = c->json;
+    if(*p == '-')
+        p++;
+
+    if(*p == '0')
+        p++;
+    else
+    {
+        if(!ISDIGIT1TO9(*p))
+            return LEPT_PARSE_INVALID_VALUE;
+
+        for(p++; ISDIGIT(*p); p++)
+            ;
+    }
+
+    if(*p)
+
+        char *end;
     v->n = strtod(c->json, &end);
     if(c->json == end)  // 说明没有获得任何有效数据
         return LEPT_PARSE_INVALID_VALUE;
