@@ -31,12 +31,12 @@ static void lept_parse_whitespace(lept_context *c)
 }
 
 /**
- * @brief 检查c的内容是否为"true"
+ * @brief
  *
  * @param c
  * @param v
  *
- * @return
+ * @return c->json 是 "false", 返回 LEPT_PARSE_OK. 否则返回 LEPT_PARSE_INVALID_VALUE
  */
 static int lept_parse_true(lept_context *c, lept_value *v)
 {
@@ -48,6 +48,14 @@ static int lept_parse_true(lept_context *c, lept_value *v)
     return LEPT_PARSE_OK;
 }
 
+/**
+ * @brief
+ *
+ * @param c
+ * @param v
+ *
+ * @return c->json 是 "false", 返回 LEPT_PARSE_OK. 否则返回 LEPT_PARSE_INVALID_VALUE
+ */
 static int lept_parse_false(lept_context *c, lept_value *v)
 {
     EXPECT(c, 'f');
@@ -58,6 +66,14 @@ static int lept_parse_false(lept_context *c, lept_value *v)
     return LEPT_PARSE_OK;
 }
 
+/**
+ * @brief
+ *
+ * @param c
+ * @param v
+ *
+ * @return c->json 是 "null", 返回 LEPT_PARSE_OK. 否则返回 LEPT_PARSE_INVALID_VALUE
+ */
 static int lept_parse_null(lept_context *c, lept_value *v)
 {
     EXPECT(c, 'n');
@@ -65,6 +81,26 @@ static int lept_parse_null(lept_context *c, lept_value *v)
         return LEPT_PARSE_INVALID_VALUE;
     c->json += 3;
     v->type = LEPT_NULL;
+    return LEPT_PARSE_OK;
+}
+
+/**
+ * @brief
+ *
+ * @param c
+ * @param v
+ *
+ * @return
+ */
+static int lept_parse_number(lept_context *c, lept_value *v)
+{
+    char *end;
+    v->n = strtod(c->json, &end);
+    if(c->json == end)  // 说明没有获得任何有效数据
+        return LEPT_PARSE_INVALID_VALUE;
+
+    c->json = end;
+    v->type = LEPT_NUMBER;
     return LEPT_PARSE_OK;
 }
 
@@ -81,12 +117,12 @@ static int lept_parse_value(lept_context *c, lept_value *v)
         case '\0':
             return LEPT_PARSE_EXPECT_VALUE;
         default:
-            return LEPT_PARSE_INVALID_VALUE;
+            return lept_parse_number(c, v);
     }
 }
 
 /**
- * @brief
+ * @brief 分析字符串 json, 并设置 v 的类型
  *
  * @param v
  * @param json
@@ -105,8 +141,11 @@ int lept_parse(lept_value *v, const char *json)
     if((ret = lept_parse_value(&c, v)) == LEPT_PARSE_OK)
     {
         lept_parse_whitespace(&c);
-        if(*c.json != '\0')
-            ret = LEPT_PARSE_ROOT_NOT_SINGULAR;
+        if(*c.json != '\0')  // parse的字符串理论上已经到了结尾
+        {
+            v->type = LEPT_NULL;
+            ret     = LEPT_PARSE_ROOT_NOT_SINGULAR;
+        }
     }
 
     return ret;
@@ -116,4 +155,10 @@ lept_type lept_get_type(const lept_value *v)
 {
     assert(v != NULL);
     return v->type;
+}
+
+double lept_get_number(const lept_value *v)
+{
+    assert(v != NULL && v->type == LEPT_NUMBER);
+    return v->n;
 }

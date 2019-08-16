@@ -19,4 +19,6 @@ GTAGS*
 
 build 
 *.o
+*.obj
+*.dblite
 *.exe
